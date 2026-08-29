@@ -176,6 +176,8 @@ body {
    ========================= */
 
 .main-content {
+  position: relative;
+
   flex: 1;
 
   height: 100vh;
@@ -355,7 +357,7 @@ body {
   display: flex;
   flex-direction: column;
 
-  padding: 1rem;
+  padding: 2rem;
 
   background: #0f172a;
   border-bottom: 1px solid #1e293b;
@@ -404,6 +406,7 @@ body {
   line-height: 1.8;
 
   resize: none;
+
   outline: none;
 
   overflow-y: auto;
@@ -425,4 +428,59 @@ body {
   flex-direction: column;
 
   border-bottom: 1px solid #1e293b;
+}
+
+/* =========================
+   AI Button
+   ========================= */
+
+.chat-toggle {
+  position: absolute;
+
+  right: 1.5rem;
+  bottom: 1.5rem;
+
+  z-index: 5;
+
+  padding: 0.75rem 1.25rem;
+
+  border: none;
+  border-radius: 999px;
+
+  background: #2563eb;
+  color: white;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.chat-toggle:hover {
+  background: #3b82f6;
+}
+
+/* =========================
+   Chat Overlay
+   ========================= */
+
+.chat-ocerlay {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 10;
+
+  display: flex;
+
+  justify-content: flex-end;
+  align-items: flesx-start;
+
+  padding: 1rem;
+
+  background: rgba(2, 6, 23, 0.45);
+
+  backdrop-filter: blur(3px);
 }

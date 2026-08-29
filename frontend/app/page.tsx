@@ -26,6 +26,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState(false); // 初回ロード完了フラグ
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // 1. 初回ロード（LocalStorageから読み込み）
   useEffect(() => {
@@ -323,6 +324,9 @@ export default function Home() {
 
       {/* ─── 右側：メインコンテンツ ─── */}
       <div className="main-content">
+
+        {/* Document Editor */}
+ 
         <div className="document-editor">
           <input
             type="text"
@@ -356,37 +360,74 @@ export default function Home() {
           />
         </div>
 
-        {/* チャット履歴エリア */}
-        <div className="chat-panel">
+        {/* AI Chat Button */}
+        <button
+          className="chat-toggle"
+          onClick={() => setIsChatOpen(true)}
+        >
+          💬AI
+        </button>
 
-          <div className="chat-history">
-            {currentSession?.messages.length === 0 ? (
-              <div className="chat-empty">
-                アイディアやシナリオについて相談してみよう
-              </div>
-            ) : (
-              currentSession?.messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={msg.role === "user" ? "msg-row-user" : "msg-row-ai"}
+        {/* Chat Overlay */}
+        {isChatOpen && (
+
+          <div className="chat-overlay">
+            <div className="chat-panel">
+
+              {/* Header */}
+              <div className="chat-header">
+                <span>AIアシスタント</span>
+                <button
+                  className="chat-close"
+                  onClick={() => setIsChatOpen(false)}
                 >
-                  <div
-                    className={
-                      msg.role === "user" ? "msg-bubble-user" : "msg-bubble-ai"
-                    }
-                  >
-                    {msg.content}
-                  </div>
-                </div>
-              ))
-            )}
-
-            {loading && (
-              <div className="msg-row-ai">
-                <div className="loading-bubble">Geminiが考えています...</div>
+                  ✖
+                </button>
               </div>
-            )}
+
+            </div>
           </div>
+
+        )}
+
+      {/* チャット履歴エリア */}
+    
+        <div className="chat-history">
+          {currentSession?.messages.length === 0 ? (
+            <div className="chat-empty">
+              アイディアやシナリオについて相談してみよう
+            </div>
+          ) : (
+            currentSession?.messages.map(
+              (msg, index) => (
+              <div
+                key={index}
+                className={
+                  msg.role === "user" 
+                    ? "msg-row-user" 
+                    : "msg-row-ai"
+                  }
+              >
+                <div
+                  className={
+                    msg.role === "user" 
+                      ? "msg-bubble-user" 
+                      : "msg-bubble-ai"
+                  }
+                >
+                  {msg.content}
+                </div>
+              </div>
+            ))
+          )}
+          {loading && (
+            <div className="msg-row-ai">
+              <div className="loading-bubble">
+                Geminiが考えています...
+              </div>
+            </div>
+          )}
+          
         </div>
 
         {/* 入力フォーム */}
@@ -398,20 +439,28 @@ export default function Home() {
           <input
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => 
+              setInput(e.target.value)
+            }
             placeholder="メッセージを入力..."
             className="chat-input"
           />
           
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={
+              loading || 
+              !input.trim()
+            }
             className="chat-btn"
           >
             送信
           </button>
+
         </form>
+
       </div>
+
     </div>
   );
 }
