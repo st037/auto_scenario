@@ -273,39 +273,42 @@ export default function Home() {
 
   return (
     <div className="chat-app-container">
+    
       {/* ─── 左側：サイドバー ─── */}
+  
       <div className="sidebar">
-        <button 
-          onClick={createNewSession} 
+  
+        <button
+          onClick={createNewSession}
           className="btn-new-chat"
         >
           <span>+</span> 新しいチャット
         </button>
-
+  
         <div className="session-list">
-
+  
           {sessions.map((s) => (
-
+          
             <div
               key={s.id}
               className={`session-item ${
-                s.id === currentSessionId 
-                  ? "session-item-active" 
+                s.id === currentSessionId
+                  ? "session-item-active"
                   : ""
               }`}
             >
-
+            
               <button
-                onClick={() => 
+                onClick={() =>
                   setCurrentSessionId(s.id)
                 }
                 className="session-select"
               >
                 <span>💬 {s.title}</span>
               </button>
-
+              
               <button
-                onClick={() => 
+                onClick={() =>
                   deleteSession(s.id)
                 }
                 className="session-delete"
@@ -313,28 +316,33 @@ export default function Home() {
               >
                 ✖
               </button>
-
+              
             </div>
-
+  
           ))}
-
+  
         </div>
-
+        
       </div>
-
+        
+        
       {/* ─── 右側：メインコンテンツ ─── */}
+        
       <div className="main-content">
-
-        {/* Document Editor */}
- 
+        
+        
+        {/* =========================
+            Document Editor
+            ========================= */}
+  
         <div className="document-editor">
+        
           <input
             type="text"
             value={
-              currentSession?.document.title ||
-              ""
+              currentSession?.document.title || ""
             }
-            onChange={(e) => 
+            onChange={(e) =>
               updateDocument(
                 "title",
                 e.target.value
@@ -343,11 +351,10 @@ export default function Home() {
             className="document-title"
             placeholder="シナリオタイトル"
           />
-
+  
           <textarea
             value={
-              currentSession?.document.content ||
-              ""
+              currentSession?.document.content || ""
             }
             onChange={(e) =>
               updateDocument(
@@ -358,109 +365,149 @@ export default function Home() {
             className="document-content"
             placeholder="ここにシナリオを書いてください..."
           />
+  
         </div>
-
-        {/* AI Chat Button */}
+          
+          
+        {/* =========================
+            AI Chat Button
+            ========================= */}
+  
         <button
           className="chat-toggle"
           onClick={() => setIsChatOpen(true)}
         >
-          💬AI
+          💬 AI
         </button>
-
-        {/* Chat Overlay */}
+        
+        
+        {/* =========================
+            Chat Overlay
+            ========================= */}
+  
         {isChatOpen && (
-
+        
           <div className="chat-overlay">
+          
             <div className="chat-panel">
-
-              {/* Header */}
+        
+        
+              {/* ─── Chat Header ─── */}
+        
               <div className="chat-header">
+        
                 <span>AIアシスタント</span>
+        
                 <button
                   className="chat-close"
-                  onClick={() => setIsChatOpen(false)}
+                  onClick={() =>
+                    setIsChatOpen(false)
+                  }
                 >
                   ✖
                 </button>
+                
               </div>
-
-            </div>
-          </div>
-
-        )}
-
-      {/* チャット履歴エリア */}
-    
-        <div className="chat-history">
-          {currentSession?.messages.length === 0 ? (
-            <div className="chat-empty">
-              アイディアやシナリオについて相談してみよう
-            </div>
-          ) : (
-            currentSession?.messages.map(
-              (msg, index) => (
-              <div
-                key={index}
-                className={
-                  msg.role === "user" 
-                    ? "msg-row-user" 
-                    : "msg-row-ai"
-                  }
+                
+                
+              {/* ─── Chat History ─── */}
+                
+              <div className="chat-history">
+                
+                {currentSession?.messages.length === 0 ? (
+                
+                  <div className="chat-empty">
+                    アイディアやシナリオについて相談してみよう
+                  </div>
+  
+                ) : (
+                
+                  currentSession?.messages.map(
+                    (msg, index) => (
+                    
+                      <div
+                        key={index}
+                        className={
+                          msg.role === "user"
+                            ? "msg-row-user"
+                            : "msg-row-ai"
+                        }
+                      >
+                      
+                        <div
+                          className={
+                            msg.role === "user"
+                              ? "msg-bubble-user"
+                              : "msg-bubble-ai"
+                          }
+                        >
+                          {msg.content}
+                        </div>
+                        
+                      </div>
+  
+                    )
+                  )
+                
+                )}
+  
+              
+                {/* ─── Loading ─── */}
+              
+                {loading && (
+                
+                  <div className="msg-row-ai">
+                  
+                    <div className="loading-bubble">
+                      Geminiが考えています...
+                    </div>
+                
+                  </div>
+  
+                )}
+  
+              </div>
+              
+              
+              {/* ─── Chat Input ─── */}
+              
+              <form
+                onSubmit={sendMessage}
+                className="chat-form"
               >
-                <div
-                  className={
-                    msg.role === "user" 
-                      ? "msg-bubble-user" 
-                      : "msg-bubble-ai"
+              
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) =>
+                    setInput(e.target.value)
                   }
+                  placeholder="メッセージを入力..."
+                  className="chat-input"
+                />
+  
+                <button
+                  type="submit"
+                  disabled={
+                    loading ||
+                    !input.trim()
+                  }
+                  className="chat-btn"
                 >
-                  {msg.content}
-                </div>
-              </div>
-            ))
-          )}
-          {loading && (
-            <div className="msg-row-ai">
-              <div className="loading-bubble">
-                Geminiが考えています...
-              </div>
+                  送信
+                </button>
+                
+              </form>
+                
+                
             </div>
-          )}
-          
-        </div>
-
-        {/* 入力フォーム */}
-        <form 
-          onSubmit={sendMessage} 
-          className="chat-form"
-        >
-
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => 
-              setInput(e.target.value)
-            }
-            placeholder="メッセージを入力..."
-            className="chat-input"
-          />
-          
-          <button
-            type="submit"
-            disabled={
-              loading || 
-              !input.trim()
-            }
-            className="chat-btn"
-          >
-            送信
-          </button>
-
-        </form>
-
+                
+          </div>
+  
+        )}
+  
       </div>
-
+      
     </div>
   );
 }
