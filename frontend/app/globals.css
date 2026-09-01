@@ -1140,3 +1140,151 @@ body {
   }
 
 }
+
+/* ==================================================
+   設定エディタ
+================================================== */
+
+.settings-editor {
+  width: 100%;
+  max-width: 800px;
+
+  padding: 30px 0 100px;
+
+  overflow-y: auto;
+}
+
+.settings-editor h1 {
+  margin: 0 0 8px;
+
+  color: #f8fafc;
+
+  font-size: 30px;
+}
+
+.settings-description {
+  margin: 0 0 35px;
+
+  color: #64748b;
+
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+
+.settings-editor label {
+  display: block;
+
+  margin: 25px 0 8px;
+
+  color: #cbd5e1;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+.settings-editor textarea,
+.settings-editor input {
+  width: 100%;
+
+  padding: 13px;
+
+  border: 1px solid #334155;
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #111827;
+
+  color: #e2e8f0;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 13px;
+
+  line-height: 1.7;
+
+  transition:
+    border 0.2s;
+}
+
+
+.settings-editor textarea {
+  min-height: 130px;
+
+  resize: vertical;
+}
+
+
+.settings-editor textarea:focus,
+.settings-editor input:focus {
+  border-color: #6366f1;
+}
+
+
+.settings-editor textarea::placeholder,
+.settings-editor input::placeholder {
+  color: #475569;
+}
+
+
+/* ==================================================
+   キャラクターカード
+================================================== */
+
+.character-card {
+  margin-bottom: 25px;
+
+  padding: 20px;
+
+  border: 1px solid #1e293b;
+
+  border-radius: 12px;
+
+  background: #111827;
+}
+
+
+.character-name {
+  margin-bottom: 10px;
+
+  font-size: 18px !important;
+  font-weight: 700;
+}
+
+
+/* ==================================================
+   設定項目
+================================================== */
+
+.setting-item {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 16px;
+
+  margin-bottom: 8px;
+
+  border: 1px solid #1e293b;
+
+  border-radius: 8px;
+
+  background: #111827;
+
+  color: #cbd5e1;
+
+  font-size: 13px;
+}
+
+
+.setting-status {
+  color: #6366f1;
+
+  font-size: 12px;
+}
