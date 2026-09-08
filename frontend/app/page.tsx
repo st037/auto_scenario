@@ -54,7 +54,9 @@ type Session = {
   project: Project;
 };
 
+//HOMEをエクスポート可能にする
 export default function Home() {
+  //Session型オブジェクトが入る
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 

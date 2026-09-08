@@ -6,6 +6,8 @@ from typing import List, Optional
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from database import engine
+from sqlalchemy import text
 
 load_dotenv()
 
@@ -14,17 +16,23 @@ app = FastAPI()
 # フロントエンド(Next.js)からのアクセスを許可する設定(CORS)
 app.add_middleware(
     CORSMiddleware,
+    #アクセスを許可するオリジンを指定
     allow_origins=["http://localhost:3000"],
+    #クッキーや認証ヘッダーの共有を許可
     allow_credentials=True,
+    #全てのHTTPメソッドを許可
     allow_methods=["*"],
+    #全てのHTTPヘッダーを許可
     allow_headers=["*"],
 )
 
+#GEMINI_API_KEYの取得
 api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
     print("WARNING: GEMINI_API_KEY is not set in .env")
 
+#クライアントの初期化
 client = genai.Client(api_key=api_key)
 
 class MessageItem(BaseModel):
@@ -36,42 +44,82 @@ class Document(BaseModel):
     content: str
 
 class ChatRequest(BaseModel):
+    #過去の会話履歴を含むメッセージのリスト
     messages: List[MessageItem]
+    #追加で渡せるドキュメントデータ
     document: Optional[Document] = None
+
+#/api/db-testにGETアクセスが来たら、db_testを実行する
+@app.get("/api/db-test")
+def db_test():
+    #エラーが起きるかもしれない処理
+    try:
+        #データベースに接続する(コンテキストマネージャー)
+        with engine.connect() as connection:
+            #データベースサーバーが応答するかを確認
+            result = connection.execute(
+                text("SELECT 1")
+            )
+
+            #レスポンスを返す
+            return {
+                "database": result.scalar()
+            }
+
+    #エラーが発生したときだけ実行
+    except Exception as e:
+        print(f"Database error: {e}")
+
+        #JSON形式のエラーを返す
+        raise HTTPException(
+            status_code=500,
+            detail="Database connection failed"
+        )
 
 @app.post("/api/chat")
 def generate_chat(request: ChatRequest):
 
+    #request.messagesが空の場合は404 Bad Requestを返して中断
     if not request.messages:
         raise HTTPException(
             status_code=400, 
             detail="メッセージが空です"
         )
 
+    #例外処理開始
     try:
         formatted_history = []
 
+        #最新の発言以外をループ処理
         for msg in request.messages[:-1]:
 
+            #aiかassistantならmodelに置き換える。そうでなければuserに置き換える
             role = (
                 "model" 
                 if msg.role in ["ai", "assistant"] 
                 else "user"
             )
 
+            #formatted_historyに追加
             formatted_history.append(
+
+                #一つの発言を表す構造体
                 types.Content(
                     role=role,
                     parts=[
+                        #テキストデータをGemini用の要素に変換
                         types.Part.from_text(
+                            #フロントエンドから送られてきた文字列
                             text=msg.content
                         )
                     ],
                 )
             )
 
+        #空の変数で初期化
         document_context = ""
 
+        #ドキュメントが開かれているかの確認
         if request.document:
 
             document_context = f""" 
@@ -87,6 +135,7 @@ def generate_chat(request: ChatRequest):
 ユーザーが文章の修正や続きを求めた場合は、
 このドキュメントの内容と矛盾しないようにしてください。
 """
+        #最新メッセージの抽出
         latest_message = request.messages[-1].content
 
         prompt = f"""
@@ -117,7 +166,8 @@ def generate_chat(request: ChatRequest):
     except Exception as e:
 
         print(f"Error: {e}")
-        
+
+        #サーバー内部エラー
         raise HTTPException(
             status_code=500, 
             detail="Gemini APIとの連携に失敗しました"
