@@ -66,6 +66,7 @@ export default function Home() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  //Union型　型定義
   type EditorMode =
   | "scenario"
   | "world"
