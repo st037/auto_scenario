@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+#pydanticは送られてきたjsonデータが、型にあっているかをチェックして、Pythonオブジェクトに変換する
 from pydantic import BaseModel
 from typing import List, Optional
 from google import genai
@@ -76,6 +77,7 @@ def db_test():
             detail="Database connection failed"
         )
 
+#クライアントが/api/chatにリクエストを送るとgenerate_chatが動く
 @app.post("/api/chat")
 def generate_chat(request: ChatRequest):
 
@@ -88,6 +90,7 @@ def generate_chat(request: ChatRequest):
 
     #例外処理開始
     try:
+        #オーバーレイ内の会話履歴
         formatted_history = []
 
         #最新の発言以外をループ処理
