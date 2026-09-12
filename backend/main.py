@@ -17,6 +17,7 @@ load_dotenv()
 
 app = FastAPI()
 
+#APIをDBが使うときにNeonとの接続を用意し、処理が終われば閉じる
 def get_db():
     db = SessionLocal()
 
