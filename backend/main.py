@@ -7,12 +7,23 @@ from typing import List, Optional
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from database import engine
+from database import engine, SessionLocal
 from sqlalchemy import text
+from models import Project
+from sqlalchemy.orm import Session
+from fastapi import Depends
 
 load_dotenv()
 
 app = FastAPI()
+
+def get_db():
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
 
 # フロントエンド(Next.js)からのアクセスを許可する設定(CORS)
 app.add_middleware(
