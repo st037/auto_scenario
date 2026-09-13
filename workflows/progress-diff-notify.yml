@@ -1,0 +1,127 @@
+name: Progress Additions Notify
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/progress/**/*.md"
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get progress additions
+        shell: bash
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          # 新規ブランチpush等で before が空/ゼロの場合の保険
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="$(git rev-list --max-parents=0 "$AFTER")"
+          fi
+
+          git diff --unified=0 "$BEFORE" "$AFTER" -- docs/progress > progress.diff || true
+
+          grep '^+' progress.diff \
+            | grep -v '^+++' \
+            | sed 's/^+//' \
+            > progress-additions.md || true
+
+          if [ ! -s progress-additions.md ]; then
+            echo "docs/progress 配下に追加行がないため、通知をスキップします。"
+            echo "should_notify=false" >> "$GITHUB_ENV"
+          else
+            echo "should_notify=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Notify Discord
+        if: env.should_notify == 'true'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+
+          if not webhook_url:
+              raise RuntimeError("DISCORD_WEBHOOK_URL is not set.")
+
+          with open("progress-additions.md", "r", encoding="utf-8", errors="replace") as f:
+              progress_text = f.read().strip()
+
+          repo = os.environ.get("REPO", "")
+          actor = os.environ.get("ACTOR", "")
+          commit_message = os.environ.get("COMMIT_MESSAGE", "")
+          commit_url = os.environ.get("COMMIT_URL", "")
+
+          def send_discord_message(content: str):
+              payload = json.dumps({"content": content}).encode("utf-8")
+
+              request = urllib.request.Request(
+                  webhook_url,
+                  data=payload,
+                  headers={
+                      "Content-Type": "application/json",
+                      "User-Agent": "GitHub-Actions-Progress-Notifier",
+                  },
+                  method="POST",
+              )
+
+              with urllib.request.urlopen(request) as response:
+                  print(response.status)
+
+          header = (
+              "進捗ログが更新されました。\n\n"
+              f"Repository: {repo}\n"
+              f"Author: {actor}\n"
+              f"Commit: {commit_message}\n"
+              f"{commit_url}"
+          )
+
+          if len(header) > 1900:
+              header = header[:1850] + "\n..."
+
+          send_discord_message(header)
+
+          chunk_size = 1500
+          chunks = [
+              progress_text[i:i + chunk_size]
+              for i in range(0, len(progress_text), chunk_size)
+          ]
+
+          total = len(chunks)
+
+          for index, chunk in enumerate(chunks, start=1):
+              if total == 1:
+                  title = "追加された内容:"
+              else:
+                  title = f"追加された内容 Part {index}/{total}:"
+
+              message = (
+                  f"{title}\n"
+                  "```md\n"
+                  f"{chunk}\n"
+                  "```"
+              )
+
+              send_discord_message(message)
+          PY
