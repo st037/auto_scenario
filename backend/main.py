@@ -187,3 +187,27 @@ def generate_chat(request: ChatRequest):
             status_code=500, 
             detail="Gemini APIとの連携に失敗しました"
         )
+
+class ProjectCreate(BaseModel):
+    title: str
+    data: dict = {}
+
+@app.post("api/projects")
+def create_project(
+    project_data: ProjectCreate,
+    db: Session = Depends(get_db)
+):
+    project = Project(
+        title=project_data.titel,
+        data=project_data.data,
+    )
+
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+
+    return {
+        "id": str(project.id),
+        "title": project.title,
+        "data": project.data,
+    }
