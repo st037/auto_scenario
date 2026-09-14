@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-#pydanticは送られてきたjsonデータが、型にあっているかをチェックして、Pythonオブジェクトに変換する
+#pydanticは送られてきたjsonデータが、型にあっているかを自動でチェックして、Pythonオブジェクトに変換する
 from pydantic import BaseModel
 from typing import List, Optional
 from google import genai
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from database import engine, SessionLocal
 from sqlalchemy import text
 from models import Project
+#SessionはDBとPython(オブジェクト)がやり取りする際の変更を書き込むためのメモ帳みたいなもの
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
@@ -19,9 +20,11 @@ app = FastAPI()
 
 #APIをDBが使うときにNeonとの接続を用意し、処理が終われば閉じる
 def get_db():
+    #SessionLocalからインスタンスを一つ取り出す
     db = SessionLocal()
 
     try:
+        #returnだと値を返した瞬間にその関数が完全終了しメモリから消滅してしまうので、yieldで処理を一時停止して、APIの処理側にdbを渡す、処理が終われば停止位置から再開
         yield db
     finally:
         db.close()
@@ -48,6 +51,9 @@ if not api_key:
 #クライアントの初期化
 client = genai.Client(api_key=api_key)
 
+#BaseModelはクライアントから送られてきたJSONデータの型をチェックする。HTTP通信で送られてくるのは、
+#文字列としてのJSONなので、Pythonオブジェクトのように変換する。(.messagesのようにプロパティにアクセスできる)
+#FastAPIと連携し、/docsを開いた時に、APIごとに送るデータの入力フォームを自動生成してくれる
 class MessageItem(BaseModel):
     role: str
     content: str
@@ -58,8 +64,10 @@ class Document(BaseModel):
 
 class ChatRequest(BaseModel):
     #過去の会話履歴を含むメッセージのリスト
+    #roleろcontentを持つオブジェクトが複数入ったリスト形式
     messages: List[MessageItem]
     #追加で渡せるドキュメントデータ
+    #ドキュメント型のデータがあってもなくてもよい。省略された場合はNoneになる
     document: Optional[Document] = None
 
 #/api/db-testにGETアクセスが来たら、db_testを実行する
@@ -68,6 +76,7 @@ def db_test():
     #エラーが起きるかもしれない処理
     try:
         #データベースに接続する(コンテキストマネージャー)
+        #withブロックを抜けた瞬間に、finallyやcloseが無くても自動的にファイルを閉じてくれる
         with engine.connect() as connection:
             #データベースサーバーが応答するかを確認
             result = connection.execute(
@@ -167,13 +176,16 @@ def generate_chat(request: ChatRequest):
 必要に応じて、現在のドキュメントや会話履歴を参照してください。
 """
 
+        #formatted_histroy(過去の履歴)を読み込ませた上で、Geminiのチャットセッションを新しく作成している
         chat_session = client.chats.create(
             model="gemini-3.6-flash",
             history=formatted_history,
         )
 
+        #作成したGeminiのチャットセッションの中で、新しいpromptをgeminiに送信し、返答を待って受け取る
         response = chat_session.send_message(prompt)
 
+        #Geminiから返ってきたオブジェクトの中から、AIの返答テキストだけ(require.txt)抜き出しAPIの呼び出し元のJSONとして返却
         return {
             "response": response.text
         }
@@ -192,13 +204,15 @@ class ProjectCreate(BaseModel):
     title: str
     data: dict = {}
 
-@app.post("api/projects")
+@app.post("/api/projects")
 def create_project(
+    #ProjectCreateの定義に従って型チェックやバリデーションを行ったうえで格納する引数
     project_data: ProjectCreate,
+    #DependsでAPIの処理が走る前に、get_dbを自動で実行し、その結果を引数として受け取っている。それを
     db: Session = Depends(get_db)
 ):
     project = Project(
-        title=project_data.titel,
+        title=project_data.title,
         data=project_data.data,
     )
 
@@ -211,3 +225,4 @@ def create_project(
         "title": project.title,
         "data": project.data,
     }
+

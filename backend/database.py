@@ -10,6 +10,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set")
 
+#データベースの接続設定を作る
 engine = create_engine(
     #DATABASE_URLのpostgresqlをpostgresql+psycopgに置換する
     DATABASE_URL.replace(
@@ -20,6 +21,7 @@ engine = create_engine(
     pool_pre_ping=True,
 )
 
+#このデータベースに繋ぐセッションを作る仕組みを作る
 SessionLocal = sessionmaker(
     #自動コミットを無効化し、不完全なデータの保存を防ぐ
     autocommit=False,
