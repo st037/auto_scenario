@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { SubmitEvent } from "react";
 import type {
   Message,
   World,
@@ -49,8 +50,14 @@ const [editorMode, setEditorMode] =
 
         setSessions(parsed);
 
-        if (parsed.length > 0) {
-          setCurrentSessionId(parsed[0].id);
+        /*if(parsed.length > 0)から、firstSessionにparsed[0]を代入してifに渡す形に変更。
+        loacalStorageに空のリストが保存されると、parsed[0]がundefinedになり、
+        そのままアクセスするとエラーになるため、lengthをとって1件以上あるかどうかを確認していたが、
+        ts.configファイルで、noUncheckedIndexedAccess: trueにしたため、typescripにとってparsed.lengthとparsed[0]というインデックスの
+        安全性が直接結びつかなかった。noUncheckedIndexedAccessは配列結果へのアクセス結果は一律でundefinedの可能性を含めるという挙動になる,*/
+        const firstSession = parsed[0];
+        if (firstSession) {
+          setCurrentSessionId(firstSession.id);
         }
       } catch (error) {
         console.error("セッションの読み込みに失敗しました:", error);
@@ -152,8 +159,10 @@ const [editorMode, setEditorMode] =
       );
 
       if (id === currentSessionId) {
-        if (next.length > 0) {
-          setCurrentSessionId(next[0].id);
+
+        const firstnext = next[0]
+        if (firstnext) {
+          setCurrentSessionId(firstnext.id);
         } else {
           setCurrentSessionId(null);
         }
@@ -319,7 +328,7 @@ const updateTimeline = (
   // =========================
 
   const sendMessage = async (
-    e: FormEvent<HTMLFormElement>
+    e: SubmitEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import type { Message } from "../types/project";
 
 type ChatOverlayProps = {
@@ -10,7 +10,7 @@ type ChatOverlayProps = {
   loading: boolean;
   /*()内の引数を受け取って、何も返さない関数(状態を変える関数)*/
   setInput: (value: string) => void;
-  sendMessage: (e: FormEvent<HTMLFormElement>) => void;
+  sendMessage: (e: SubmitEvent<HTMLFormElement>) => void;
   setIsChatOpen: (value: boolean) => void;
 };
 
