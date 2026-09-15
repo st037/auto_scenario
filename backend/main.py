@@ -213,13 +213,16 @@ def create_project(
 ):
     #projectに、DBに新しく保存する1行分のデータをPythonのメモリ上で新しく作る=インスタンス化している
     project = Project(
-        #pydanticで必須/任意、値の制約、
+        #pydanticで必須/任意、値の制約、型変換、独自ルールをチェックする
         title=project_data.title,
         data=project_data.data,
     )
 
+    #この新しいデータをSessionに置く
     db.add(project)
+    #Sessionにある変更内容をDBに書き込んで確定させる
     db.commit()
+    #DBに書き込んだ結果、自動で決まった最新データを、Python側のprojectにも反映させる
     db.refresh(project)
 
     return {
