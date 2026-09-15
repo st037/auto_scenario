@@ -211,7 +211,9 @@ def create_project(
     #DependsでAPIの処理が走る前に、get_dbを自動で実行し、その結果を引数として受け取っている。それを
     db: Session = Depends(get_db)
 ):
+    #projectに、DBに新しく保存する1行分のデータをPythonのメモリ上で新しく作る=インスタンス化している
     project = Project(
+        #pydanticで必須/任意、値の制約、
         title=project_data.title,
         data=project_data.data,
     )
@@ -225,4 +227,3 @@ def create_project(
         "title": project.title,
         "data": project.data,
     }
-
