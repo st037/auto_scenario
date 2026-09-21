@@ -1,0 +1,54 @@
+{
+  "name": "auto_scenario",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "dependencies": {
+    "assertion-error": "^2.0.1",
+    "chai": "^6.2.2",
+    "detect-libc": "^2.1.2",
+    "es-module-lexer": "^2.3.2",
+    "estree-walker": "^3.0.3",
+    "expect-type": "^1.4.0",
+    "fdir": "^6.5.0",
+    "lightningcss": "^1.33.0",
+    "lightningcss-win32-x64-msvc": "^1.33.0",
+    "magic-string": "^1.4.1",
+    "nanoid": "^3.3.19",
+    "obug": "^2.2.1",
+    "picocolors": "^1.1.1",
+    "picomatch": "^4.0.7",
+    "postcss": "^8.5.28",
+    "rolldown": "^1.2.8",
+    "siginfo": "^2.0.0",
+    "source-map-js": "^1.2.1",
+    "stackback": "^0.0.2",
+    "std-env": "^4.2.0",
+    "tinybench": "^6.1.4",
+    "tinyexec": "^1.3.0",
+    "tinyglobby": "^0.2.17",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1",
+    "why-is-node-running": "^2.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.4"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/st037/auto_scenario.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/st037/auto_scenario/issues"
+  },
+  "homepage": "https://github.com/st037/auto_scenario#readme"
+}
