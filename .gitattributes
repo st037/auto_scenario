@@ -2,3 +2,5 @@
 docs/* linguist-vendored
 dist/* linguist-vendored
 coverage/* linguist-vendored
+
+*.html linguist-detectable=false
