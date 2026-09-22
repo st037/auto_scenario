@@ -7,3 +7,11 @@ test("ホーム画面が表示される", async ({ page }) => {
     page.getByRole("button", { name: /新しいシナリオを作成/ })
   ).toBeVisible();
 });
+
+test("新しいシナリオを作成できる", async ({ page }) => {
+  await page.goto("/");
+
+  await page
+    .getByRole("button", { name: /新しいシナリオを作成/ })
+    .click();
+});
