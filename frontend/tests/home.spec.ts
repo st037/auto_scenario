@@ -14,4 +14,8 @@ test("新しいシナリオを作成できる", async ({ page }) => {
   await page
     .getByRole("button", { name: /新しいシナリオを作成/ })
     .click();
+
+  console.log("URL:", page.url());
+  console.log("TITLE:", await page.title());
+  console.log("BODY:", await page.locator("body").innerText());
 });
