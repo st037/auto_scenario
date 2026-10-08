@@ -62,13 +62,47 @@ class Document(BaseModel):
     title: str
     content: str
 
+class World(BaseModel):
+    description: str
+    era: str
+    technology: str
+    rules: str
+
+class Character(BaseModel):
+    id: str
+    name: str
+    age: str
+    personality: str
+    background: str
+    goal: str
+
+class Plot(BaseModel):
+    summary: str
+    chapters: str
+
+class Timeline(BaseModel):
+    past: str
+    present: str
+    future: str
+
+class Scenario(BaseModel):
+    title: str
+    content: str
+
+class Project(BaseModel):
+    world: World
+    characters: List[Character]
+    plot: Plot
+    timeline: Timeline
+    scenario: Scenario
+
 class ChatRequest(BaseModel):
     #過去の会話履歴を含むメッセージのリスト
     #roleろcontentを持つオブジェクトが複数入ったリスト形式
     messages: List[MessageItem]
     #追加で渡せるドキュメントデータ
     #ドキュメント型のデータがあってもなくてもよい。省略された場合はNoneになる
-    document: Optional[Document] = None
+    project: Optional[Project] = None
 
 #/api/db-testにGETアクセスが来たら、db_testを実行する
 @app.get("/api/db-test")
@@ -141,33 +175,82 @@ def generate_chat(request: ChatRequest):
             )
 
         #空の変数で初期化
-        document_context = ""
+        project_context = ""
 
         #ドキュメントが開かれているかの確認
-        if request.document:
+        if request.project:
+            project = request.project
 
-            document_context = f""" 
-現在ユーザーが編集しているドキュメントがあります。
+            character_text = "\n".join(
+                [
+                    f"""
+        キャラクター名: {character.name}
+        年齢: {character.age}
+        性格: {character.personality}
+        背景: {character.background}
+        目的: {character.goal}
+        """
+                    for character in project.characters
+                ]
+            )
 
-タイトル:
-{request.document.title}
+            project_context = f"""
+        現在のプロジェクト設定:
 
-本文:
-{request.document.content}
+        【世界観】
+        説明:
+        {project.world.description}
 
-このドキュメントの内容を考慮して回答してください。
-ユーザーが文章の修正や続きを求めた場合は、
-このドキュメントの内容と矛盾しないようにしてください。
-"""
+        時代: 
+        {project.world.era}
+
+        技術:
+        {project.world.technology}
+
+        世界のルール:
+        {project.world.rules}
+
+        【キャラクター】
+        {character_text}
+
+        【プロット】
+        概要:
+        {project.plot.summary}
+
+        章構成:
+        {project.plot.chapters}
+
+        【時系列】
+        過去:
+        {project.timeline.past}
+
+        現在:
+        {project.timeline.present}
+
+        未来:
+        {project.timeline.future}
+
+        【現在のシナリオ】
+        タイトル:
+        {project.scenario.title}
+
+        本文:
+        {project.scenario.content}
+        """
+
         #最新メッセージの抽出
         latest_message = request.messages[-1].content
 
         prompt = f"""
 あなたは物語・シナリオ制作を支援するAIアシスタントです。
 
-ユーザーは現在、物語のドキュメントを編集しています。
+以下は現在のプロジェクト設定です。
 
-{document_context}
+{project_context}
+
+プロジェクト設定を基準として回答してください。
+世界観、キャラクター、プロット、時系列、
+現在のシナリオの内容と矛盾しないようにしてください。
 
 ユーザーからの最新の指示:
 

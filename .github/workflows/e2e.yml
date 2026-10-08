@@ -38,3 +38,4 @@ jobs:
             -H 'Content-type: application/json'\
             --data "{\"text\":\"auto_scenario E2E test finished: ${{ job.status }}\"}"\
             "${{ secrets.SLACK_WEBHOOK_URL }}"
+            

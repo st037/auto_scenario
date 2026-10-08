@@ -48,21 +48,47 @@ const [editorMode, setEditorMode] =
       try {
         const parsed: Session[] = JSON.parse(saved);
 
-        setSessions(parsed);
+        //setSessions(parsed);
+
+        const validSessions = parsed.filter(
+          (session) =>
+            session.project &&
+            session.project.scenario &&
+            session.project.world &&
+            session.project.characters &&
+            session.project.plot &&
+            session.project.timeline
+        );
+        
+        if (validSessions.length > 0) {
+          setSessions(validSessions);
+
+          const firstSession = validSessions[0];
+
+          if (firstSession) {
+            setCurrentSessionId(firstSession.id);
+          } else {
+            createNewSession();
+          }
+        }
+      } catch (error) {
+        console.error(
+          "セッションの読み込みに失敗しました:", 
+          error
+        );
+
+        createNewSession();
+      }
+    } else {
+      createNewSession();
+    }
 
         /*if(parsed.length > 0)から、firstSessionにparsed[0]を代入してifに渡す形に変更。
         loacalStorageに空のリストが保存されると、parsed[0]がundefinedになり、
         そのままアクセスするとエラーになるため、lengthをとって1件以上あるかどうかを確認していたが、
         ts.configファイルで、noUncheckedIndexedAccess: trueにしたため、typescripにとってparsed.lengthとparsed[0]というインデックスの
-        安全性が直接結びつかなかった。noUncheckedIndexedAccessは配列結果へのアクセス結果は一律でundefinedの可能性を含めるという挙動になる,*/
-        const firstSession = parsed[0];
-        if (firstSession) {
-          setCurrentSessionId(firstSession.id);
-        }
-      } catch (error) {
-        console.error("セッションの読み込みに失敗しました:", error);
-      }
-    }
+        安全性が直接結びつかなかった。noUncheckedIndexedAccessは配列結果へのアクセス結果は一律でundefinedの可能性を含めるという挙動になる,
+        */
 
     setIsInitialized(true);
   }, []);
@@ -176,7 +202,7 @@ const [editorMode, setEditorMode] =
   // ドキュメント更新
   // =========================
 
-  const updateScenario = (
+const updateScenario = (
   field: "title" | "content",
   value: string
 ) => {
@@ -202,6 +228,40 @@ const [editorMode, setEditorMode] =
       };
     })
   );
+};
+
+const addToScenario = (content: string) => {
+  if (!currentSessionId) return;
+
+  setSessions((prev) =>
+    prev.map((session) => {
+      if (session.id !== currentSessionId) {
+        return session;
+      }
+
+      const currentContent = 
+        session.project.scenario.content;
+
+      const newContent = currentContent
+        ? `${currentContent}\n\n${content}`
+        : content;
+
+      return {
+        ...session,
+
+        project: {
+          ...session.project,
+
+          scenario: {
+            ...session.project.scenario,
+            content: newContent,
+          },
+        },
+      };
+    })
+  );
+
+  setEditorMode("scenario");
 };
 
 const updateWorld = (
@@ -1031,6 +1091,7 @@ const updateTimeline = (
             setInput={setInput}
             sendMessage={sendMessage}
             setIsChatOpen={setIsChatOpen}
+            addToScenario={addToScenario}
           />
         )}
 

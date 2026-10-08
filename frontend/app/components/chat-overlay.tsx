@@ -12,6 +12,7 @@ type ChatOverlayProps = {
   setInput: (value: string) => void;
   sendMessage: (e: SubmitEvent<HTMLFormElement>) => void;
   setIsChatOpen: (value: boolean) => void;
+  addToScenario: (content: string) => void; 
 };
 
 export default function ChatOverlay({
@@ -21,6 +22,7 @@ export default function ChatOverlay({
   setInput,
   sendMessage,
   setIsChatOpen,
+  addToScenario
 }: ChatOverlayProps) {
   return (
     <div className="chat-overlay">
@@ -113,6 +115,16 @@ export default function ChatOverlay({
                   }
                 >
                   {msg.content}
+
+                  {msg.role === "ai" && (
+                    <button
+                      type="button"
+                      className="add-to-scenario-btn"
+                      onClick={() => addToScenario(msg.content)}
+                    >
+                      +シナリオに追加
+                    </button>
+                  )}
                 </div>
 
               </div>
