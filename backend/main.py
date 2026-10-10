@@ -2,17 +2,18 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 #pydanticは送られてきたjsonデータが、型にあっているかを自動でチェックして、Pythonオブジェクトに変換する
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from database import engine, SessionLocal
 from sqlalchemy import text
-from models import Project
+from models import Project as ProjectModel
 #SessionはDBとPython(オブジェクト)がやり取りする際の変更を書き込むためのメモ帳みたいなもの
 from sqlalchemy.orm import Session
 from fastapi import Depends
+from uuid import UUID
 
 load_dotenv()
 
@@ -285,7 +286,7 @@ def generate_chat(request: ChatRequest):
 
 class ProjectCreate(BaseModel):
     title: str
-    data: dict = {}
+    data: dict = Field(default_factory=dict)
 
 @app.post("/api/projects")
 def create_project(
@@ -295,7 +296,7 @@ def create_project(
     db: Session = Depends(get_db)
 ):
     #projectに、DBに新しく保存する1行分のデータをPythonのメモリ上で新しく作る=インスタンス化している
-    project = Project(
+    project = ProjectModel(
         #pydanticで必須/任意、値の制約、型変換、独自ルールをチェックする
         title=project_data.title,
         data=project_data.data,
@@ -313,3 +314,96 @@ def create_project(
         "title": project.title,
         "data": project.data,
     }
+
+@app.get("/api/projects")
+def get_projects(db: Session = Depends(get_db)):
+    projects = (
+        db.query(ProjectModel)
+        .order_by(ProjectModel.created_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": str(project.id),
+            "title": project.title,
+            "data": project.data,
+            "created_at": project.created_at.isoformat(),
+            "updated_at": project.updated_at.isoformat(),
+        }
+        for project in projects
+    ]
+
+@app.get("/api/projects/{project_id}")
+def get_project(
+    project_id: UUID,
+    db: Session = Depends(get_db)
+):
+    
+    project = (
+        db.query(ProjectModel)
+        .filter(ProjectModel.id == project_id)
+        .first()
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+
+    return {
+        "id": str(project.id),
+        "title": project.title,
+        "data": project.data,
+        "created_at": project.created_at.isoformat(),
+        "updated_at": project.updated_at.isoformat(),
+    }
+
+class ProjectUpdate(BaseModel):
+    title: str
+    data: dict = Field(default_factory=dict)
+
+@app.put("/api/projects/{project_id}")
+def update_project(
+    project_id: UUID,
+    project_data: ProjectUpdate,
+    db: Session = Depends(get_db)
+):
+    
+    project = (
+    db.query(ProjectModel)
+    .filter(ProjectModel.id == project_id)
+    .first()
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+
+    try:
+        project.title = project_data.title
+        project.data = project_data.data
+
+        db.commit()
+
+        db.refresh(project)
+
+        return {
+            "id": str(project.id),
+            "title": project.title,
+            "data": project.data,
+            "created_at": project.created_at.isoformat(),
+            "updated_at": project.updated_at.isoformat(),
+        }
+
+    except Exception as e:
+        db.rollback()
+        print(f"Project update error: {e}")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update project"
+        )

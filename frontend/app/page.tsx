@@ -40,57 +40,106 @@ const [editorMode, setEditorMode] =
   // =========================
   // 初期化
   // =========================
-
+  
   useEffect(() => {
-    const saved = localStorage.getItem("chat_sessions");
-
-    if (saved) {
+    const initialize = async () => {
       try {
-        const parsed: Session[] = JSON.parse(saved);
-
-        //setSessions(parsed);
-
-        const validSessions = parsed.filter(
-          (session) =>
-            session.project &&
-            session.project.scenario &&
-            session.project.world &&
-            session.project.characters &&
-            session.project.plot &&
-            session.project.timeline
+        const res = await fetch(
+          "http://localhost:8000/api/projects"
         );
-        
-        if (validSessions.length > 0) {
-          setSessions(validSessions);
 
-          const firstSession = validSessions[0];
-
-          if (firstSession) {
-            setCurrentSessionId(firstSession.id);
-          } else {
-            createNewSession();
-          }
+        if (!res.ok) {
+          throw new Error(
+            `プロジェクト取得エラー: ${res.status}`
+          );
         }
-      } catch (error) {
+
+        const records = await res.json();
+
+        const dbSessions: Session[] = records
+          .filter(
+            (record: {
+              id: string;
+              title: string;
+              data: {
+                messages?: Message[];
+                project?: Project;
+              };
+            }) =>
+              record.data?.project?.scenario &&
+              record.data?.project?.world &&
+              record.data?.project?.characters &&
+              record.data?.project?.plot &&
+              record.data?.project?.timeline
+          )
+          .map(
+            (record: {
+              id: string;
+              title: string;
+              data: {
+                messages?: Message[];
+                project: Project;
+              };
+            }) => ({
+              id: record.id,
+              title: record.title,
+              messages: record.data.messages ?? [],
+              project: record.data.project,
+            })
+          );
+
+        if (dbSessions.length > 0) {
+          setSessions(dbSessions);
+          setCurrentSessionId(dbSessions[0]!.id);
+          return;
+        }
+
+        loadLocalSessions();
+      } catch(error) {
         console.error(
-          "セッションの読み込みに失敗しました:", 
+          "Neonからの読み込みに失敗しました:",
           error
         );
 
-        createNewSession();
+        loadLocalSessions();
+      } finally {
+        setIsInitialized(true);
       }
-    } else {
+    };
+
+    const loadLocalSessions = () => {
+      const saved = localStorage.getItem("chat_sessions");
+
+      if (saved) {
+        try {
+          const parsed: Session[] = JSON.parse(saved);
+
+          const validSessions = parsed.filter(
+            (session) =>
+              session.project?.scenario &&
+              session.project?.world &&
+              session.project?.characters &&
+              session.project?.plot &&
+              session.project?.timeline
+          );
+
+          if (validSessions.length > 0) {
+            setSessions(validSessions);
+            setCurrentSessionId(validSessions[0]!.id);
+            return;
+          }
+        } catch(error) {
+          console.error(
+            "LocalStorageの読み込みに失敗しました:",
+            error
+          );
+        }
+      }
+
       createNewSession();
-    }
+    };
 
-        /*if(parsed.length > 0)から、firstSessionにparsed[0]を代入してifに渡す形に変更。
-        loacalStorageに空のリストが保存されると、parsed[0]がundefinedになり、
-        そのままアクセスするとエラーになるため、lengthをとって1件以上あるかどうかを確認していたが、
-        ts.configファイルで、noUncheckedIndexedAccess: trueにしたため、typescripにとってparsed.lengthとparsed[0]というインデックスの
-        安全性が直接結びつかなかった。noUncheckedIndexedAccessは配列結果へのアクセス結果は一律でundefinedの可能性を含めるという挙動になる,
-        */
-
-    setIsInitialized(true);
+    void initialize();
   }, []);
 
   // =========================
@@ -118,16 +167,10 @@ const [editorMode, setEditorMode] =
   // 新しいチャット
   // =========================
 
-  const createNewSession = () => {
-  const id = Date.now().toString();
+  const createNewSession = async() => {
+    const id = Date.now().toString();
 
-  const newSession: Session = {
-    id,
-    title: "新しいシナリオ",
-
-    messages: [],
-
-    project: {
+    const newProject: Project = {
       world: {
         description: "",
         era: "",
@@ -154,24 +197,70 @@ const [editorMode, setEditorMode] =
       timeline: {
         past: "",
         present: "",
-        future: "",
+        future: ""
       },
-
+      
       scenario: {
         title: "新しいシナリオ",
         content: "",
       },
-    },
-  };
+    };
 
-  setSessions((prev) => [
-    newSession,
-    ...prev,
-  ]);
+    try {
+      const res = await fetch("http://localhost:8000/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "新しいシナリオ",
+          data: {
+            messages: [],
+            project: newProject,
+          },
+        }),
+      });
 
-  setCurrentSessionId(id);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(
+          `プロジェクト保存エラー: ${res.status}`
+        );
+      }
 
-  setIsChatOpen(false);
+      const saved: {
+        id: string;
+        title: string;
+        data: {
+          messages?: Message[];
+          project?: Project;
+        };
+      } = await res.json();
+
+      const newSession: Session = {
+        id: saved.id,
+        title: saved.title,
+        messages: saved.data.messages ?? [],
+        project: saved.data.project ?? newProject,
+      };
+
+      setSessions((prev) => [
+        newSession,
+        ...prev,
+      ]);
+
+      setCurrentSessionId(saved.id);
+
+      setIsChatOpen(false); 
+
+      console.log("新規プロジェクトが保存されました:", saved.id);
+
+    } catch(error) {
+      console.error("新規プロジェクトの保存に失敗しました:", error);
+      alert(
+        "シナリオの保存に失敗しました。バックエンドの起動状態を確認してください。"
+      );
+    }
 };
 
   // =========================
@@ -1094,6 +1183,7 @@ const updateTimeline = (
             addToScenario={addToScenario}
           />
         )}
+
 
       </main>
 
