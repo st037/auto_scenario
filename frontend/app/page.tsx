@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SubmitEvent } from "react";
 import type {
   Message,
@@ -24,6 +24,10 @@ export default function Home() {
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const lastSavedRef = useRef<Record<string, string>>({});
+
+  const hasSaveBaselineRef = useRef(false);
 
   //Union型　型定義
   type EditorMode =
@@ -156,6 +160,88 @@ const [editorMode, setEditorMode] =
   }, [sessions, isInitialized]);
 
   // =========================
+  // Neonへの自動保存
+  // =========================
+
+  useEffect(() => {
+    if(!isInitialized) return;
+
+    const isDatabaseId = (id: string) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    
+    const createPayload = (session: Session) => ({
+      title: session.title,
+      data: {
+        messages: session.messages,
+        project: session.project,
+      },
+    });
+
+    if(!hasSaveBaselineRef.current) {
+    for (const session of sessions) {
+      if (!isDatabaseId(session.id)) continue;
+
+      lastSavedRef.current[session.id] =
+        JSON.stringify(createPayload(session));
+    }
+
+    hasSaveBaselineRef.current = true;
+    return;
+  }
+
+  const timeoutId = window.setTimeout(async () => {
+    for (const session of sessions) {
+      if (!isDatabaseId(session.id)) continue;
+
+      const payload = createPayload(session);
+      const serialized = JSON.stringify(payload);
+
+      if (lastSavedRef.current[session.id] === serialized) {
+        continue;
+      }
+
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/projects/${session.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: serialized,
+          }
+        );
+
+        if (!res.ok) {
+          const errorText = await res.text();
+
+          throw new Error(
+            `保存エラー: ${res.status} ${errorText}`
+          );
+        }
+
+        lastSavedRef.current[session.id] = serialized;
+
+        console.log(
+          "Neonへの自動保存が成功しました:",
+          session.id
+        );
+      } catch(error) {
+        console.error(
+          "Neonへの自動保存に失敗しました:",
+          error
+        );
+      }
+    }
+  }, 1000);
+
+  return () => {
+    window.clearTimeout(timeoutId);
+  };
+
+  }, [sessions, isInitialized]);
+
+  // =========================
   // 現在のセッション
   // =========================
 
@@ -243,6 +329,14 @@ const [editorMode, setEditorMode] =
         messages: saved.data.messages ?? [],
         project: saved.data.project ?? newProject,
       };
+
+      lastSavedRef.current[newSession.id] = JSON.stringify({
+        title: newSession.title,
+        data: {
+          messages: newSession.messages,
+          project: newSession.project,
+        },
+      });
 
       setSessions((prev) => [
         newSession,
